@@ -1,0 +1,12 @@
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "utils",
+    srcs = glob(["*.kt"]),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@maven//:io_netty_netty_common",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+        "@com_google_protobuf//java/util",
+    ],
+)

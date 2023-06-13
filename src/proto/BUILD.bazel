@@ -1,0 +1,34 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_github_grpc_grpc_kotlin//:kt_jvm_grpc.bzl", "kt_jvm_grpc_library", "kt_jvm_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+alias(
+    name = "remote_execution_java_proto",
+    actual = "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:remote_execution_java_proto",
+)
+
+kt_jvm_proto_library(
+    name = "remote_execution_kt_proto",
+    deps = [
+        "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:remote_execution_proto",
+        "@com_github_bazelbuild_remote_apis//build/bazel/semver:semver_proto",
+    ],
+)
+
+kt_jvm_grpc_library(
+    name = "remote_execution_kt_grpc_proto",
+    srcs = ["@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:remote_execution_proto"],
+    deps = [":remote_execution_java_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "bytestream_kt_proto",
+    deps = ["@googleapis//google/bytestream:bytestream_proto"],
+)
+
+kt_jvm_grpc_library(
+    name = "bytestream_kt_grpc_proto",
+    srcs = ["@googleapis//google/bytestream:bytestream_proto"],
+    deps = ["@googleapis//google/bytestream:bytestream_java_proto"],
+)

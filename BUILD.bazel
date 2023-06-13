@@ -1,0 +1,15 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+
+copy_file(
+    name = "bazel_remote",
+    src = select({
+        "@bazel_tools//src/conditions:linux_x86_64": "@bazel_remote_linux_x86_64//file",
+        "@bazel_tools//src/conditions:linux_aarch64": "@bazel_remote_linux_arm64//file",
+        "@bazel_tools//src/conditions:darwin_x86_64": "@bazel_remote_darwin_x86_64//file",
+        "@bazel_tools//src/conditions:darwin_arm64": "@bazel_remote_darwin_arm64//file",
+        "//conditions:default": None,
+    }),
+    out = "bazel_remote",
+    is_executable = True,
+    visibility = ["//visibility:public"],
+)
