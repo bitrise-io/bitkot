@@ -2,6 +2,21 @@ workspace(name = "com_github_bitrise_io_bitkot")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
+####### Bazel Distribution
+
+http_archive(
+    name = "vaticle_bazel_distribution",
+    patches = ["//patches:bazel_distribution.diff"],
+    sha256 = "0d0c3128fae3c9a9349e38c0de1b82cef9c8b7f2d31b1aac77e0e111bf546a4b",
+    strip_prefix = "bazel-distribution-3da5196dfc18fc2e235a3ccc146ea6a90a20702f",
+    url = "https://github.com/vaticle/bazel-distribution/archive/3da5196dfc18fc2e235a3ccc146ea6a90a20702f.zip",
+)
+
+load(
+    "@vaticle_bazel_distribution//maven:deps.bzl",
+    VATICLE_MAVEN_ARTIFACTS = "maven_artifacts_with_versions",
+)
+
 ####### BitKot exported deps
 
 load("//src/bzl/deps:repositories.bzl", "bitkot_repositories")
@@ -26,7 +41,7 @@ bitkot_toolchains(registered_repos)
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
-    artifacts = IO_BITRISE_BITKOT_ARTIFACTS,
+    artifacts = IO_BITRISE_BITKOT_ARTIFACTS + VATICLE_MAVEN_ARTIFACTS,
     fetch_sources = True,
     generate_compat_repositories = True,
     override_targets = IO_BITRISE_BITKOT_OVERRIDE_TARGETS,
@@ -40,15 +55,6 @@ maven_install(
 load("@maven//:compat.bzl", "compat_repositories")
 
 compat_repositories()
-
-####### Bazel Distribution
-
-http_archive(
-    name = "com_github_vaticle_bazel_distribution",
-    sha256 = "0d0c3128fae3c9a9349e38c0de1b82cef9c8b7f2d31b1aac77e0e111bf546a4b",
-    strip_prefix = "bazel-distribution-3da5196dfc18fc2e235a3ccc146ea6a90a20702f",
-    url = "https://github.com/vaticle/bazel-distribution/archive/3da5196dfc18fc2e235a3ccc146ea6a90a20702f.zip",
-)
 
 ####### Bazel Remote
 

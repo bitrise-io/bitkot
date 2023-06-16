@@ -1,0 +1,49 @@
+diff --git maven/rules.bzl maven/rules.bzl
+index 60c5078..701c59e 100644
+--- maven/rules.bzl
++++ maven/rules.bzl
+@@ -208,17 +208,26 @@ def _aggregate_dependency_info_impl(target, ctx):
+             jars, source_jars + [None] * (len(jars) - len(source_jars))
+         )]
+     else:
+-        fail("Unsure how to package dependency for target: %s" % target)
++        print("WARNING: Unsure how to package dependency for target: %s" % target)
++        return []
++
++    transitive_deps = []
++    for target in deps_all:
++        if JarInfo not in target:
++            continue
++        # Filter transitive JARs from dependency that has maven coordinates
++        # because those dependencies will already include the JARs as part
++        # of their classpath
++        if target[JarInfo].name:
++            deps = depset([dep for dep in target[JarInfo].deps.to_list() if dep.type == 'pom'])
++        else:
++            deps = target[JarInfo].deps
++
++        transitive_deps.append(deps)
+ 
+     return JarInfo(
+         name = maven_coordinates,
+-        deps = depset(dependencies, transitive = [
+-            # Filter transitive JARs from dependency that has maven coordinates
+-            # because those dependencies will already include the JARs as part
+-            # of their classpath
+-            depset([dep for dep in target[JarInfo].deps.to_list() if dep.type == 'pom'])
+-                if target[JarInfo].name else target[JarInfo].deps for target in deps_all
+-        ]),
++        deps = depset(dependencies, transitive = transitive_deps),
+     )
+ 
+ aggregate_dependency_info = aspect(
+@@ -230,7 +239,8 @@ aggregate_dependency_info = aspect(
+     ],
+     doc = "Collects the Maven coordinates of the given java_library, its direct dependencies, and its transitive dependencies",
+     implementation = _aggregate_dependency_info_impl,
+-    provides = [JarInfo],
++    # provides = [JarInfo],
++    required_providers = [JavaInfo],
+ )
+ 
+ assemble_maven = rule(

@@ -6,6 +6,10 @@ kt_jvm_library(
         "cache.kt",
         "cache_config.kt",
     ],
+    tags = [
+        "manual",
+        "maven_coordinates=io.bitrise.bitkot:cache:{pom_version}",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//src/kotlin:serialization",

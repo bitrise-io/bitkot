@@ -1,0 +1,24 @@
+load("@vaticle_bazel_distribution//maven:rules.bzl", "assemble_maven")
+
+assemble_maven(
+    name = "assemble",
+    developers = {"1": [
+        "name=Gleb Kolobkov",
+        "email=gleb.kolobkov@bitrise.io",
+        "organization=Bitrise",
+    ]},
+    license = "mit",
+    project_description = "BitKot Cache Client",
+    project_name = "BitKot Cache Client",
+    project_url = "https://github.com/bitrise-io/bitkot",
+    scm_url = "https://github.com/bitrise-io/bitkot.git",
+    target = "//src/kotlin/cache",
+    version_file = ":VERSION",
+    workspace_refs = ":workspace_refs.json",
+)
+
+#deploy_maven(
+#    name = "deploy",
+#    release = "https://maven.pkg.github.com/bitrise-io/bitkot",
+#    target = ":assemble",
+#)
