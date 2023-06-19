@@ -10,8 +10,7 @@ import bitkot.proto_utils.parseDigestFromFilename
 import com.google.protobuf.ByteString
 import kotlinx.coroutines.flow.Flow
 import java.util.*
-
-interface ILocalCache: ICache, IStreamCache
+interface ILocalCache: ICacheWithLocal, IStreamCache
 
 private open class LocalDBCache(
     private val db: String,
@@ -60,7 +59,7 @@ private class LocalCache(inner: IInnerLocalCache)
         inner.writeWhole("ac", digest.toFileName(), result.toByteString())
     }
 
-//    override fun localCache(db: String): ILocalDBCache = LocalDBCache(db, inner)
+    override fun localCache(db: String): ILocalDBCache = LocalDBCache(db, inner)
 
     override suspend fun dispose() {}
 

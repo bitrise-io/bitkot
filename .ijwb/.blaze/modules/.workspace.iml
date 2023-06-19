@@ -29,14 +29,12 @@
     <orderEntry type="library" name="header_kotlinx-coroutines-core-jvm-1.6.4_cb861fcc" level="project" />
     <orderEntry type="library" name="stub.abi_fd72a25c" level="project" />
     <orderEntry type="library" name="header_protobuf-kotlin-3.23.2_315ce73f" level="project" />
-    <orderEntry type="library" name="libremote_execution_proto-speed-hjar_b3f377bc" level="project" />
     <orderEntry type="library" name="libapi-hjar_4ce65546" level="project" />
     <orderEntry type="library" name="libcore-hjar_21bb8b0" level="project" />
     <orderEntry type="library" name="bytestream_kt_grpc_proto.abi_9f0803f9" level="project" />
     <orderEntry type="library" name="bytestream_kt_proto.abi_9f0803f9" level="project" />
     <orderEntry type="library" name="remote_execution_kt_grpc_proto.abi_9f0803f9" level="project" />
     <orderEntry type="library" name="header_kotlinx-coroutines-test-jvm-1.6.4_3b3a60ff" level="project" />
-    <orderEntry type="library" name="remote_execution_kt_proto.abi_9f0803f9" level="project" />
     <orderEntry type="library" name="kotlin-stdlib_1adbfd19" level="project" />
     <orderEntry type="library" name="librunfiles-hjar_d5a320f4" level="project" />
     <orderEntry type="library" name="header_netty-common-4.1.87.Final_bb20ed38" level="project" />
@@ -46,8 +44,12 @@
     <orderEntry type="library" name="kotlin-test_b9131a" level="project" />
     <orderEntry type="library" name="header_netty-transport-classes-epoll-4.1.87.Final_8ad9f95e" level="project" />
     <orderEntry type="library" name="libinternal-hjar_4fe539f3" level="project" />
-    <orderEntry type="library" name="header_kotlinx-serialization-core-jvm-1.4.1_af698384" level="project" />
     <orderEntry type="library" name="libbytestream_proto-speed-hjar_d18d6e61" level="project" />
+    <orderEntry type="library" name="remote_execution_kt_proto.abi_9f0803f9" level="project" />
+    <orderEntry type="library" name="header_kotlinx-serialization-core-jvm-1.4.1_af698384" level="project" />
+    <orderEntry type="library" name="libremote_execution_proto-speed-hjar_b3f377bc" level="project" />
+    <orderEntry type="library" name="libsemver_proto-speed-hjar_9179f1a8" level="project" />
+    <orderEntry type="library" name="header_kotlinx-coroutines-core-1.6.1_d9ce2175" level="project" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
   </component>
 </module>

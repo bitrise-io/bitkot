@@ -55,3 +55,7 @@ interface IBlobCache {
 interface ILocalDBCache: IBlobCache, IStreamCache, IBlobFinder
 
 interface ICache: IActionCache, IBlobCache, IBlobFinder, Disposable
+
+interface ICacheWithLocal: ICache {
+    fun localCache(db: String): ILocalDBCache
+}

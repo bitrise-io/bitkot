@@ -1,7 +1,7 @@
 package bitkot.cache
 
 import bitkot.cache.iface.ICache
-import bitkot.cache.iface.ILocalDBCache
+import bitkot.cache.iface.ICacheWithLocal
 import bitkot.cache.iface.collectFrom
 import bitkot.cache.local.ILocalCache
 import bitkot.cache.local.createLocalCache
@@ -23,17 +23,17 @@ import kotlin.io.path.div
 import bitkot.utils.*
 import bitkot.proto_utils.toFileName
 
-class Cache(
+open class Cache(
     private val remote: IRemoteCache,
     private val local: ILocalCache
-): ICache, CompositeDisposable() {
+): ICacheWithLocal, CompositeDisposable() {
 
     init {
         addDisposable(remote)
         addDisposable(local)
     }
 
-//    override fun localCache(db: String) = local.localCache(db)
+    override fun localCache(db: String) = local.localCache(db)
 
     override suspend fun getActionResult(digest: Digest): ActionResult? {
         val ar = remote.getActionResult(digest) ?: return local.getActionResult(digest)
