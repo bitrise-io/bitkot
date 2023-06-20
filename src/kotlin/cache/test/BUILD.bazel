@@ -17,6 +17,19 @@ kt_jvm_test(
 )
 
 kt_jvm_test(
+    name = "remote_cache_test",
+    srcs = ["remote_cache_test.kt"],
+    test_class = "bitkot.cache.test.RemoteCacheTest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin/cache",
+        "//src/kotlin/cache/remote",
+        "//src/kotlin/utils",
+        "@bazel_tools//tools/java/runfiles",
+    ] + defs.KOTLIN_STD + defs.TEST_DEPS,
+)
+
+kt_jvm_test(
     name = "cache_test",
     srcs = ["cache_test.kt"],
     data = [

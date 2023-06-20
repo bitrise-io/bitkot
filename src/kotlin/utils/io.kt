@@ -7,14 +7,12 @@ import kotlin.io.path.deleteIfExists
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
 
-const val kMaxChunkSize = 2 * 1024 * 1024
-
-fun Path.inputStreamFlow(delete: Boolean): Flow<ByteString>? {
+fun Path.inputStreamFlow(delete: Boolean, chunkSize: Int): Flow<ByteString>? {
     val readStream = inputStream()
     return flow {
         try {
             while(true) {
-                val data = ByteString.readFrom(readStream, kMaxChunkSize)
+                val data = ByteString.readFrom(readStream, chunkSize)
                 if (data.isEmpty) {
                     break
                 }

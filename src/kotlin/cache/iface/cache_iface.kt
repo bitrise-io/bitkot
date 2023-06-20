@@ -13,6 +13,8 @@ import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.nio.file.Path
 
+const val kDefaultChunkSize = 1024 * 1024
+
 interface IBlobFinder {
     suspend fun findMissing(digests: List<Digest>): List<Digest>
 }

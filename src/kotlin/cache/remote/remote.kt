@@ -19,11 +19,7 @@ import java.util.concurrent.Executor
 import kotlin.io.path.div
 import bitkot.utils.*
 import bitkot.proto_utils.toFileName
-
-// note that in our gradle plugin I think we're defaulting to 1mb, so doing the same here for now
-const val chunkSize = 1024*1024
-// but according to this thread, 64Kb is "ideal" - https://github.com/grpc/grpc.github.io/issues/371
-// const val chunkSize = 1024*64
+import kotlin.time.Duration.Companion.seconds
 
 const val zeroHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
@@ -57,7 +53,7 @@ private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWrit
 
 private const val binaryRequestMetadataKey = "build.bazel.remote.execution.v2.requestmetadata-bin"
 
-private class RemoteCache(directory: Path, config: RemoteCacheConfig): IRemoteCache {
+private class RemoteCache(directory: Path, private val config: RemoteCacheConfig): IRemoteCache {
     private val tmpDir = (directory / "remote_tmp")
         .apply { toFile().mkdirs() }
     private val channel = channelFromEndpoint(config.endpoint)
@@ -87,6 +83,8 @@ private class RemoteCache(directory: Path, config: RemoteCacheConfig): IRemoteCa
     private val cas = ContentAddressableStorageGrpcKt.ContentAddressableStorageCoroutineStub(channel, clientCallOptions)
     private val bs = ByteStreamGrpcKt.ByteStreamCoroutineStub(channel, clientCallOptions)
     private val caps = CapabilitiesGrpcKt.CapabilitiesCoroutineStub(channel, clientCallOptions)
+
+    private val rateLimiter = config.mbpsWriteLimit?.let { RateLimiter(it * 128L * 1024L, 1L.seconds) }
 
     init {
         runBlocking {
@@ -130,7 +128,7 @@ private class RemoteCache(directory: Path, config: RemoteCacheConfig): IRemoteCa
     override suspend fun writeFrom(digest: Digest, src: Path) {
         val inputFlow = tmpDir
             .createInnerTmpHardlinkTo(src)
-            ?.inputStreamFlow(true)
+            ?.inputStreamFlow(true, config.chunkSize)
             ?: return
 
         write(digest).collectFrom(inputFlow)
@@ -152,28 +150,25 @@ private class RemoteCache(directory: Path, config: RemoteCacheConfig): IRemoteCa
 
     @OptIn(FlowPreview::class)
     override fun write(digest: Digest): IWriter {
-        val rn = "bitkot/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
-        return ChannelWriter {
-            bs.write(
-                // way too many back and forth copies here, todo: only work with bytearrays?
-                it.map { bs -> bs.toByteArray() }
-                .flatMapMerge {
-                    flow {
-                        val blobSize = it.size
-                        var chunked = 0
-                        var seek: Int
-                        while(chunked < blobSize) {
-                            seek = minOf(chunkSize, blobSize - chunked)
-                            emit(writeRequest {
-                                resourceName = if (chunked == 0) rn else ""
-                                writeOffset = chunked.toLong()
-                                finishWrite = chunked == blobSize-seek
-                                data = ByteString.copyFrom(it.slice(chunked until chunked + seek).toByteArray())
-                            })
-                            chunked += seek
+        return ChannelWriter { f ->
+            var first = true
+            var offset = 0L
+            bs.write(f.map {
+                rateLimiter?.awaitQuota(it.size().toLong())
+                try {
+                    writeRequest {
+                        if (first) {
+                            first = false
+                            resourceName = "bitblaze/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
                         }
+                        writeOffset = offset
+                        finishWrite = it.isEmpty
+                        data = it
                     }
-                })
+                } finally {
+                    offset += it.size()
+                }
+            })
         }
     }
 

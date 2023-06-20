@@ -87,13 +87,12 @@ private class RemoteCacheWrapper(
         .redirectError(ProcessBuilder.Redirect.PIPE)
         .start()
 
-    private val cache = createRemoteCache(
-        dir,
-        RemoteCacheConfig(
-            endpoint = "grpc://127.0.0.1:9092",
-            headers = mapOf(),
-        ),
+    private val cacheConfig = RemoteCacheConfig(
+        endpoint = "grpc://127.0.0.1:9092",
+        headers = mapOf(),
     )
+
+    private val cache = createRemoteCache(dir, cacheConfig)
 
     override suspend fun getActionResult(digest: Digest) = cache.getActionResult(digest)
     override suspend fun upsertActionResult(digest: Digest, result: ActionResult) = cache.upsertActionResult(digest, result)
@@ -106,7 +105,7 @@ private class RemoteCacheWrapper(
     override suspend fun writeFrom(digest: Digest, src: Path) {
         val inputFlow = tmpDir
             .createInnerTmpHardlinkTo(src)
-            ?.inputStreamFlow(true)
+            ?.inputStreamFlow(true, cacheConfig.chunkSize)
             ?: return
 
         write(digest).collectFrom(inputFlow)

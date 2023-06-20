@@ -57,7 +57,7 @@ private open class Cache(
             .sum()
 
     override suspend fun read(db: String, key: String)
-        = checkHasMovable(db, key)?.inputStreamFlow(true)
+        = checkHasMovable(db, key)?.inputStreamFlow(true, config.chunkSize)
 
     override fun checkHasMovable(db: String, key: String): Path? {
         val src = outDir.resolve(db).resolve(key)

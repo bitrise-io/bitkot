@@ -1,5 +1,6 @@
 package bitkot.cache.local
 
+import bitkot.cache.iface.kDefaultChunkSize
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
@@ -7,5 +8,6 @@ import kotlinx.serialization.SerialName
 data class LocalCacheConfig(
     @SerialName("use_hardlinks") val useHardlinks: Boolean = true,
     @SerialName("erase_on_start") val eraseOnStart: Boolean = false,
-    @SerialName("max_size_mb") val maxSizeMb: Long? = null
+    @SerialName("max_size_mb") val maxSizeMb: Long? = null,
+    @SerialName("chunk_size") val chunkSize: Int = kDefaultChunkSize,
 )
