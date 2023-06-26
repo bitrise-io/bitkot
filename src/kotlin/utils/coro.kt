@@ -5,10 +5,7 @@ import kotlinx.coroutines.*
 import io.netty.util.concurrent.Future
 import io.netty.util.concurrent.GenericFutureListener
 import kotlinx.coroutines.channels.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.*
 import java.io.Closeable
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -184,3 +181,28 @@ fun <T> throttleCombine(flows: List<Flow<T>>, periodMillis: Long): Flow<List<Lis
 @ExperimentalCoroutinesApi
 fun <T> Flow<T>.throttleCombine(periodMillis: Long) = throttleCombine(listOf(this), periodMillis)
     .map { it.first() }
+
+class TaskExecutorPool(size: Int, poolName: String): CompositeDisposable() {
+    @OptIn(DelicateCoroutinesApi::class)
+    private val executors = List(size) { newSingleThreadContext("$poolName#$it") }
+
+    private val freeExecutors = Channel<ExecutorCoroutineDispatcher>(size)
+        .also { queue -> executors.onEach { queue.trySend(it).getOrThrow() } }
+
+    suspend fun <T, R> runTasks(values: Sequence<T>, handler: suspend (value: T) -> R): Flow<Result<R>> {
+        return channelFlow {
+            for (value in values) {
+                val executor = freeExecutors.receive()
+                launch(executor) {
+                    try {
+                        send(runCatching { handler(value) })
+                    } finally {
+                        freeExecutors.trySend(executor).getOrThrow()
+                    }
+                }
+            }
+        }
+    }
+
+
+}
