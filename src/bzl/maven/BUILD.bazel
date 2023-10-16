@@ -12,7 +12,7 @@ assemble_maven(
     project_name = "BitKot Cache Client",
     project_url = "https://github.com/bitrise-io/bitkot",
     scm_url = "https://github.com/bitrise-io/bitkot.git",
-    target = "//src/kotlin/cache",
+    target = "//src/kotlin/io/bitrise/bitkot/cache",
     version_file = ":VERSION",
     workspace_refs = ":workspace_refs.json",
 )

@@ -1,0 +1,16 @@
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "local",
+    srcs = [
+        "local.kt",
+        "local_cache.kt",
+        "local_config.kt",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin:serialization",
+        "//src/kotlin/io/bitrise/bitkot/cache/iface",
+        "//src/kotlin/io/bitrise/bitkot/proto_utils",
+    ],
+)

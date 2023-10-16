@@ -3,6 +3,10 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//src/bzl/googleapis:googleapis.bzl", _googleapis = "googleapis")
 load("//src/bzl/utility:func_name.bzl", "func_name")
 
+PROTOBUF_VERSION = "24.4"
+GRPC_JAVA_VERSION = "1.58.0"
+GRPC_KOTLIN_VERSION = "1.4.0"
+
 
 def initialize_dep(f, registered):
     fstr = func_name(f)
@@ -20,6 +24,7 @@ def bitkot_repositories():
     """
     registered = []
     initialize_dep(bazel_skylib, registered)
+    initialize_dep(aspect_bazel_lib, registered)
     initialize_dep(io_bazel_rules_kotlin, registered)
     initialize_dep(com_google_protobuf, registered)
     initialize_dep(io_grpc_grpc_java, registered)
@@ -28,7 +33,6 @@ def bitkot_repositories():
     initialize_dep(googleapis, registered)
     initialize_dep(com_github_bazelbuild_remote_apis, registered)
     initialize_dep(rules_cc, registered)
-    initialize_dep(com_grail_bazel_toolchain, registered)
     return registered
 
 
@@ -43,52 +47,60 @@ def bazel_skylib():
     )
 
 
+def aspect_bazel_lib():
+    http_archive(
+        name = "aspect_bazel_lib",
+        sha256 = "91acfc0ef798d3c87639cbfdb6274845ad70edbddfd92e49ac70944f08f97f58",
+        strip_prefix = "bazel-lib-2.0.0-rc0",
+        url = "https://github.com/aspect-build/bazel-lib/releases/download/v2.0.0-rc0/bazel-lib-v2.0.0-rc0.tar.gz",
+    )
+
+
 def io_bazel_rules_kotlin():
+    io_bazel_rules_kotlin_version = "1.8"
+    io_bazel_rules_kotlin_sha = "01293740a16e474669aba5b5a1fe3d368de5832442f164e4fbfc566815a8bc3a"
     http_archive(
         name = "io_bazel_rules_kotlin",
-        sha256 = "fd92a98bd8a8f0e1cdcb490b93f5acef1f1727ed992571232d33de42395ca9b3",
-        url = "https://github.com/bazelbuild/rules_kotlin/releases/download/v1.7.1/rules_kotlin_release.tgz",
+        url = "https://github.com/bazelbuild/rules_kotlin/releases/download/v%s/rules_kotlin_release.tgz" % io_bazel_rules_kotlin_version,
+        sha256 = io_bazel_rules_kotlin_sha,
     )
 
 
 def com_google_protobuf():
     http_archive(
         name = "com_google_protobuf",
-        sha256 = "f6ac7f4b735f9b7c50e45cff845e787eeb4acde9a8955542c9f1f7f95ada876f",
-        strip_prefix = "protobuf-23.3",
-        url = "https://github.com/protocolbuffers/protobuf/archive/v23.3.zip",
+        sha256 = "1b086ae1a01817482eed5bce04b631b7e3b38e43ade4ea32a8419b02b3f84f56",
+        strip_prefix = "protobuf-%s" % PROTOBUF_VERSION,
+        url = "https://github.com/protocolbuffers/protobuf/archive/v%s.zip" % PROTOBUF_VERSION,
     )
 
 
 def io_grpc_grpc_java():
     http_archive(
         name = "io_grpc_grpc_java",
-        sha256 = "b1d2db800d3cce5a219ce75433eff3f195245902fd67b15a59e35f459c2ee90a",
-        strip_prefix = "grpc-java-1.55.1",
-        url = "https://github.com/grpc/grpc-java/archive/refs/tags/v1.55.1.zip",
+        sha256 = "20132d94cd9cc2dbffb1b34d684b00aaa4c0451ecea7f7e8be91eccc9259071f",
+        strip_prefix = "grpc-java-%s" % GRPC_JAVA_VERSION,
+        url = "https://github.com/grpc/grpc-java/archive/refs/tags/v%s.zip" % GRPC_JAVA_VERSION,
     )
 
 
 def com_github_grpc_grpc_kotlin():
     http_archive(
         name = "com_github_grpc_grpc_kotlin",
-        sha256 = "7d06ab8a87d4d6683ce2dea7770f1c816731eb2a172a7cbb92d113ea9f08e5a7",
-        strip_prefix = "grpc-kotlin-1.3.0",
-        url = "https://github.com/grpc/grpc-kotlin/archive/refs/tags/v1.3.0.zip",
+        sha256 = "548e45a050b1f24be9556e70050806a54ae0863e2bd391f0e7b13a2123492b58",
+        strip_prefix = "grpc-kotlin-%s" % GRPC_KOTLIN_VERSION,
+        url = "https://github.com/grpc/grpc-kotlin/archive/refs/tags/v%s.zip" % GRPC_KOTLIN_VERSION,
     )
 
 
 def rules_jvm_external():
-    RULES_JVM_EXTERNAL_TAG = "5.2"
-    RULES_JVM_EXTERNAL_SHA ="f86fd42a809e1871ca0aabe89db0d440451219c3ce46c58da240c7dcdc00125f"
+    RULES_JVM_EXTERNAL_TAG = "5.3"
+    RULES_JVM_EXTERNAL_SHA ="d31e369b854322ca5098ea12c69d7175ded971435e55c18dd9dd5f29cc5249ac"
     http_archive(
         name = "rules_jvm_external",
         strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
         sha256 = RULES_JVM_EXTERNAL_SHA,
-        url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (
-            RULES_JVM_EXTERNAL_TAG, 
-            RULES_JVM_EXTERNAL_TAG,
-        )
+        url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG)
     )
 
 
@@ -113,39 +125,7 @@ def com_github_bazelbuild_remote_apis():
 def rules_cc():
     http_archive(
         name = "rules_cc",
-        url = "https://github.com/bazelbuild/rules_cc/releases/download/0.0.6/rules_cc-0.0.6.tar.gz",
-        sha256 = "3d9e271e2876ba42e114c9b9bc51454e379cbf0ec9ef9d40e2ae4cec61a31b40",
-        strip_prefix = "rules_cc-0.0.6",
+        urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.9/rules_cc-0.0.9.tar.gz"],
+        sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",
+        strip_prefix = "rules_cc-0.0.9",
     )
-
-
-def com_grail_bazel_toolchain():
-    BAZEL_TOOLCHAIN_COMMIT = "c65ef7a45907016a754e5bf5bfabac76eb702fd3"
-    BAZEL_TOOLCHAIN_SHA = "511ff1ccca8873a1edfa9e254755263f78652b00ffce04c66ce675430081036a"
-    http_archive(
-        name = "com_grail_bazel_toolchain",
-        sha256 = BAZEL_TOOLCHAIN_SHA,
-        strip_prefix = "bazel-toolchain-{tag}".format(tag = BAZEL_TOOLCHAIN_COMMIT),
-        url = "https://github.com/grailbio/bazel-toolchain/archive/{commit}.zip".format(commit = BAZEL_TOOLCHAIN_COMMIT),
-    )
-    _SYSTROOT_ALL_FILES = """\
-filegroup(
-    name = "sysroot",
-    srcs = glob([ "*/**" ]),
-    visibility = [ "//visibility:public" ],
-)
-"""
-    http_archive(
-        name = "sysroot_debian11_amd64",
-        build_file_content = _SYSTROOT_ALL_FILES,
-        sha256 = "bacf1506da1bfc9dbb4e856aa61b2a80af75956d4f812708e29058042c27b444",
-        url = "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain/3bdb3503702d35520d101fc5eec9a8ab5353149f/debian_bullseye_amd64_sysroot.tar.xz",
-    )
-    http_archive(
-        name = "sysroot_debian11_arm64",
-        build_file_content = _SYSTROOT_ALL_FILES,
-        sha256 = "3ad71e52f7052f0a4a75a35bd2a6ce55fa26fb186a0760b971c7d11957d137b7",
-        url = "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain/6553f74237ef4a99240a740f0084e1ade71aec6f/debian_bullseye_arm64_sysroot.tar.xz",
-    )
-
-

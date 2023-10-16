@@ -1,0 +1,22 @@
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "cache",
+    srcs = [
+        "cache.kt",
+        "cache_config.kt",
+    ],
+    tags = [
+        "manual",
+        "maven_coordinates=io.bitrise.bitkot:cache:{pom_version}",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin:serialization",
+        "//src/kotlin/io/bitrise/bitkot/cache/iface",
+        "//src/kotlin/io/bitrise/bitkot/cache/local",
+        "//src/kotlin/io/bitrise/bitkot/cache/remote",
+        "//src/kotlin/io/bitrise/bitkot/proto_utils",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+    ],
+)

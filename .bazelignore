@@ -1,4 +1,7 @@
 .bazelignore
+.bazelproject
+.bazelrc
+.gitignore
 .git
 .ijwb
 bazel-bin
@@ -6,3 +9,7 @@ bazel-genfiles
 bazel-out
 bazel-testlogs
 bazel-bitkot
+
+gradlegen
+.gradle
+build

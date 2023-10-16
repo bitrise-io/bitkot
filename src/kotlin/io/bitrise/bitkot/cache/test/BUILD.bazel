@@ -1,0 +1,48 @@
+load("//src/kotlin:defs.bzl", "defs")
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_test")
+
+kt_jvm_test(
+    name = "local_cache_test",
+    srcs = ["local_cache_test.kt"],
+    test_class = "bitkot.cache.test.LocalCacheTest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin/io/bitrise/bitkot/cache",
+        "//src/kotlin/io/bitrise/bitkot/cache/iface",
+        "//src/kotlin/io/bitrise/bitkot/cache/local",
+        "//src/kotlin/io/bitrise/bitkot/cache/remote",
+        "//src/kotlin/io/bitrise/bitkot/utils",
+        "@bazel_tools//tools/java/runfiles",
+    ] + defs.KOTLIN_STD + defs.TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "remote_cache_test",
+    srcs = ["remote_cache_test.kt"],
+    test_class = "bitkot.cache.test.RemoteCacheTest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin/io/bitrise/bitkot/cache",
+        "//src/kotlin/io/bitrise/bitkot/cache/remote",
+        "//src/kotlin/io/bitrise/bitkot/utils",
+        "@bazel_tools//tools/java/runfiles",
+    ] + defs.KOTLIN_STD + defs.TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "cache_test",
+    srcs = ["cache_test.kt"],
+    data = [
+        "//:bazel_remote",
+    ],
+    test_class = "bitkot.cache.test.CacheTest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin/io/bitrise/bitkot/cache",
+        "//src/kotlin/io/bitrise/bitkot/cache/iface",
+        "//src/kotlin/io/bitrise/bitkot/cache/local",
+        "//src/kotlin/io/bitrise/bitkot/cache/remote",
+        "//src/kotlin/io/bitrise/bitkot/utils",
+        "@bazel_tools//tools/java/runfiles",
+    ] + defs.KOTLIN_STD + defs.TEST_DEPS,
+)

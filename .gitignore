@@ -1,3 +1,11 @@
 bazel-*
 .jwb/
 .ijwb
+
+.gradle
+.DS_Store
+**/build
+
+build.gradle.kts
+gradlegen
+build

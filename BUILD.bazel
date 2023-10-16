@@ -1,4 +1,12 @@
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
+load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
+load("@io_bazel_rules_kotlin//src/main/starlark/core/repositories:versions.bzl", _kt_versions = "versions")
+
+load("//src/bzl/copy_protos:copy_protos.bzl", "copy_protos")
+load("//src/bzl/gradle_utils:gradle_utils.bzl", "map_artifacts_to_maven_coords")
+load("//src/bzl/deps:repositories.bzl", "GRPC_JAVA_VERSION", "GRPC_KOTLIN_VERSION", "PROTOBUF_VERSION")
+load("//src/bzl/deps:repositories_extra.bzl", "IO_BITRISE_BITKOT_ARTIFACTS")
 
 copy_file(
     name = "bazel_remote",
@@ -12,4 +20,47 @@ copy_file(
     out = "bazel_remote",
     is_executable = True,
     visibility = ["//visibility:public"],
+)
+
+_MAVEN_DEPS = map_artifacts_to_maven_coords(IO_BITRISE_BITKOT_ARTIFACTS + [
+    "io.grpc:grpc-kotlin-stub:%s" % GRPC_KOTLIN_VERSION,
+    "io.grpc:grpc-protobuf:%s" % GRPC_JAVA_VERSION,
+    "io.grpc:grpc-netty:%s" % GRPC_JAVA_VERSION,
+])
+
+
+expand_template(
+    name = "expand_build_gradle_kts_tpl",
+    template = "//src/conf:build.gradle.kt.tpl",
+    substitutions = {
+        "%%kotlin-version%%": _kt_versions.KOTLIN_CURRENT_COMPILER_RELEASE.version,
+        "%%dependencies%%": "\n".join([
+            "    implementation(\"%s\")" % x
+            for x in _MAVEN_DEPS
+        ]),
+        "%%protobuf-verson%%": "3.%s" % PROTOBUF_VERSION,
+        "%%grpc-version%%": GRPC_JAVA_VERSION,
+        "%%grpc-kotlin-version%%": GRPC_KOTLIN_VERSION,
+    },
+)
+
+copy_protos(
+    name = "copy_protos",
+    deps = [
+        "//src/proto/kv_storage:kv_storage_proto",
+        "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:remote_execution_proto",
+        "@googleapis//google/bytestream:bytestream_proto",
+    ],
+    include_external_repositories = [
+        "com_github_bazelbuild_remote_apis",
+        "googleapis",
+    ],
+)
+
+write_source_files(
+    name = "write_gradle_configuration",
+    files = {
+        "build.gradle.kts": ":expand_build_gradle_kts_tpl",
+        "gradlegen/proto": ":copy_protos",
+    },
 )

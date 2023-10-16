@@ -1,0 +1,27 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_java//java:defs.bzl", "java_proto_library")
+load("@com_github_grpc_grpc_kotlin//:kt_jvm_grpc.bzl", "kt_jvm_grpc_library", "kt_jvm_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "kv_storage_proto",
+    srcs = ["kv_storage.proto"],
+    deps = ["@googleapis//google/bytestream:bytestream_proto"],
+)
+
+java_proto_library(
+    name = "kv_storage_java_proto",
+    deps = [":kv_storage_proto"],
+)
+
+kt_jvm_proto_library(
+    name = "kv_storage_kt_proto",
+    deps = [":kv_storage_proto"],
+)
+
+kt_jvm_grpc_library(
+    name = "kv_storage_kt_grpc_proto",
+    srcs = [":kv_storage_proto"],
+    deps = [":kv_storage_java_proto"],
+)

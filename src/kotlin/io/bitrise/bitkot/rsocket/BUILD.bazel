@@ -1,0 +1,16 @@
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "rsocket_client",
+    srcs = ["rsocket_client.kt"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@io_netty_netty_resolver_dns_classes_macos//jar",
+        "@io_netty_netty_resolver_dns_native_macos_osx_aarch_64//jar",
+        "@io_netty_netty_resolver_dns_native_macos_osx_x86_64//jar",
+        "@io_projectreactor_netty_reactor_netty//jar",
+        "@io_projectreactor_netty_reactor_netty_core//jar",
+        "@io_rsocket_rsocket_core//jar",
+        "@io_rsocket_rsocket_transport_netty//jar",
+    ],
+)

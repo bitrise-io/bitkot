@@ -1,0 +1,23 @@
+load("@com_github_bitrise_io_bitkot//src/kotlin:defs.bzl", "defs")
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library")
+
+kt_jvm_library(
+    name = "remote",
+    srcs = [
+        "rate_limiter.kt",
+        "remote.kt",
+        "remote_config.kt",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin:serialization",
+        "//src/kotlin/io/bitrise/bitkot/cache/iface",
+        "//src/kotlin/io/bitrise/bitkot/grpc_utils",
+        "//src/kotlin/io/bitrise/bitkot/proto_utils",
+        "//src/kotlin/io/bitrise/bitkot/utils",
+        "//src/proto:bytestream_kt_grpc_proto",
+        "//src/proto:bytestream_kt_proto",
+        "//src/proto:remote_execution_kt_grpc_proto",
+        "//src/proto:remote_execution_kt_proto",
+    ] + defs.GRPC_DEPS,
+)

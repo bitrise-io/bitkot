@@ -1,0 +1,12 @@
+load("//src/kotlin:defs.bzl", "defs")
+load("@io_bazel_rules_kotlin//kotlin:jvm.bzl", "kt_jvm_test")
+
+kt_jvm_test(
+    name = "coro_test",
+    srcs = ["coro_test.kt"],
+    test_class = "bitkot.utils.test.CoroTest",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/kotlin/io/bitrise/bitkot/utils",
+    ] + defs.KOTLIN_STD + defs.TEST_DEPS,
+)

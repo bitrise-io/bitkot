@@ -25,8 +25,8 @@ registered_repos = bitkot_repositories()
 
 load(
     "//src/bzl/deps:repositories_extra.bzl",
-    "IO_BITRISE_BITKOT_ARTIFACTS",
-    "IO_BITRISE_BITKOT_OVERRIDE_TARGETS",
+    "IO_BITRISE_BITKOT_ALL_ARTIFACTS",
+    "IO_BITRISE_BITKOT_ALL_OVERRIDE_TARGETS",
     "bitkot_repositories_extra",
 )
 
@@ -41,10 +41,10 @@ bitkot_toolchains(registered_repos)
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
-    artifacts = IO_BITRISE_BITKOT_ARTIFACTS + VATICLE_MAVEN_ARTIFACTS,
+    artifacts = IO_BITRISE_BITKOT_ALL_ARTIFACTS + VATICLE_MAVEN_ARTIFACTS,
     fetch_sources = True,
     generate_compat_repositories = True,
-    override_targets = IO_BITRISE_BITKOT_OVERRIDE_TARGETS,
+    override_targets = IO_BITRISE_BITKOT_ALL_OVERRIDE_TARGETS,
     repositories = [
         "https://maven.google.com",
         "https://repo1.maven.org/maven2",
