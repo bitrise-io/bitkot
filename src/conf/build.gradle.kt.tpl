@@ -34,16 +34,24 @@ dependencies {
 %%dependencies%%
 }
 
+val protoSrcDir: Directory = layout.projectDirectory.dir("gradlegen/proto")
+val protoGenDir: Provider<Directory> = layout.buildDirectory.dir("generated/source/proto/main")
+val kotlinSrcDir: Directory = layout.projectDirectory.dir("src/kotlin")
+
 sourceSets {
     main {
         java {
             setSrcDirs(listOf(
-                "src/kotlin",
-                "build/generated/source/proto/main",
+                kotlinSrcDir.asFile.path,
+                protoGenDir.map{it.asFile.path},
             ))
             setExcludes(listOf("**/test/*.kt"))
         }
-        proto.setSrcDirs(listOf("gradlegen/proto"))
+        proto { 
+            setSrcDirs(listOf(
+                protoSrcDir.asFile.path,
+            ))
+        }
     }
     /*test {
         java {
