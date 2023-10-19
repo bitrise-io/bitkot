@@ -21,60 +21,62 @@ load(
 )
 load("@googleapis//:repository_rules.bzl", "switched_rules_by_language")
 
-_NETTY_VERSION = "4.1.93.Final"
-_KOTLINX_COROUTINES_VERSION = "1.7.3"
-_RSOCKET_VERSION = "1.1.4"
+NETTY_VERSION = "4.1.100.Final"
+KOTLINX_COROUTINES_VERSION = "1.7.3"
+KOTLINX_SERIALIZATION_VERSION = "1.6.0"
+RSOCKET_VERSION = "1.1.4"
+REACTOR_VERSION = "1.1.12"
 
 IO_BITRISE_BITKOT_ARTIFACTS = [
     "com.google.protobuf:protobuf-java:3.%s" % PROTOBUF_VERSION,
     "com.google.protobuf:protobuf-kotlin:3.%s" % PROTOBUF_VERSION,
-    "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.6.0",
+    "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:%s" % KOTLINX_SERIALIZATION_VERSION,
     "com.charleskorn.kaml:kaml-jvm:0.55.0",
-    "org.jetbrains.kotlinx:kotlinx-coroutines-test:%s" % _KOTLINX_COROUTINES_VERSION,
-    "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:%s" % _KOTLINX_COROUTINES_VERSION,
-    "io.netty:netty-transport-native-unix-common:%s" % _NETTY_VERSION,
-    "io.netty:netty-transport-native-epoll:%s" % _NETTY_VERSION,
+    "org.jetbrains.kotlinx:kotlinx-coroutines-test:%s" % KOTLINX_COROUTINES_VERSION,
+    "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:%s" % KOTLINX_COROUTINES_VERSION,
+    "io.netty:netty-transport-native-unix-common:%s" % NETTY_VERSION,
+    "io.netty:netty-transport-native-epoll:%s" % NETTY_VERSION,
     maven.artifact(
         "io.netty",
         "netty-transport-native-epoll",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "linux-x86_64",
     ),
     maven.artifact(
         "io.netty",
         "netty-transport-native-epoll",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "linux-aarch_64",
     ),
-    "io.netty:netty-transport-native-kqueue:%s" % _NETTY_VERSION,
+    "io.netty:netty-transport-native-kqueue:%s" % NETTY_VERSION,
     maven.artifact(
         "io.netty",
         "netty-transport-native-kqueue",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "osx-x86_64",
     ),
     maven.artifact(
         "io.netty",
         "netty-transport-native-kqueue",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "osx-aarch_64",
     ),
-    "io.netty:netty-resolver-dns-native-macos:%s" % _NETTY_VERSION,
+    "io.netty:netty-resolver-dns-native-macos:%s" % NETTY_VERSION,
     maven.artifact(
         "io.netty",
         "netty-resolver-dns-native-macos",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "osx-x86_64",
     ),
     maven.artifact(
         "io.netty",
         "netty-resolver-dns-native-macos",
-        _NETTY_VERSION,
+        NETTY_VERSION,
         classifier = "osx-aarch_64",
     ),
-    "io.rsocket:rsocket-core:%s" % _RSOCKET_VERSION,
-    "io.rsocket:rsocket-transport-netty:%s" % _RSOCKET_VERSION,
-    "io.projectreactor.netty:reactor-netty:1.1.12",
+    "io.rsocket:rsocket-core:%s" % RSOCKET_VERSION,
+    "io.rsocket:rsocket-transport-netty:%s" % RSOCKET_VERSION,
+    "io.projectreactor.netty:reactor-netty:%s" % REACTOR_VERSION,
 ]
 
 IO_BITRISE_BITKOT_ALL_ARTIFACTS = IO_GRPC_GRPC_JAVA_ARTIFACTS + IO_GRPC_GRPC_KOTLIN_ARTIFACTS + IO_BITRISE_BITKOT_ARTIFACTS

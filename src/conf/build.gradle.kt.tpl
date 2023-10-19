@@ -7,11 +7,10 @@ import com.google.protobuf.gradle.*
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "%%kotlin-version%%"
-    id("com.google.protobuf") version "0.9.4"
-
     `java-library`
     `kotlin-dsl`
+
+    %%plugins%%
 }
 
 val javaVersion = JavaVersion.VERSION_17
@@ -31,7 +30,9 @@ repositories {
 }
 
 dependencies {
-%%dependencies%%
+    %%libraries%%
+
+    %%artifacts%%
 }
 
 val protoSrcDir: Directory = layout.projectDirectory.dir("gradlegen/proto")
@@ -67,14 +68,14 @@ tasks.withType<KotlinCompile> {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:%%protobuf-verson%%"
+        artifact = "${libs.protoc.compiler.get()}"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:%%grpc-version%%"
+            artifact = "${libs.protoc.java.get()}"
         }
         id("grpckt") {
-            artifact = "io.grpc:protoc-gen-grpc-kotlin:%%grpc-kotlin-version%%:jdk8@jar"
+            artifact = "${libs.protoc.kotlin.get()}:jdk8@jar"
         }
     }
     generateProtoTasks {
