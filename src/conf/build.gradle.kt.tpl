@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-library`
-    `kotlin-dsl`
 
     %%plugins%%
 }
@@ -20,9 +19,9 @@ java {
     // withSourcesJar()
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-	// Do not use, no effect; will be overridden by kotlinDslPluginOptions.jvmTarget, see KotlinDslCompilerPlugins.
-	kotlinOptions.jvmTarget = javaVersion.toString()
+tasks.withType<KotlinCompile> {
+    kotlinOptions.jvmTarget = javaVersion.toString()
+    dependsOn(tasks.named("generateProto"))
 }
 
 repositories {
@@ -60,10 +59,6 @@ sourceSets {
             setIncludes(listOf("**/test/*.kt"))
         }
     }*/
-}
-
-tasks.withType<KotlinCompile> {
-    dependsOn(tasks.named("generateProto"))
 }
 
 protobuf {
