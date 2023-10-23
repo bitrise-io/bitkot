@@ -71,60 +71,6 @@ open class Cache(
 
 }
 
-private class RemoteCacheWrapper(
-    binPath: Path,
-    dir: Path,
-): ICache, IRemoteCache {
-
-    private val tmpDir = (dir / "tmp").apply { toFile().mkdirs() }
-
-    private val proc: Process = ProcessBuilder(listOf(
-        binPath.toString(),
-        "--dir=$dir/data",
-        "--max_size=1",
-    ))
-        .redirectOutput(ProcessBuilder.Redirect.PIPE)
-        .redirectError(ProcessBuilder.Redirect.PIPE)
-        .start()
-
-    private val cacheConfig = RemoteCacheConfig(
-        endpoint = "grpc://127.0.0.1:9092",
-        headers = mapOf(),
-    )
-
-    private val cache = createRemoteCache(dir, cacheConfig)
-
-    override suspend fun getActionResult(digest: Digest) = cache.getActionResult(digest)
-    override suspend fun upsertActionResult(digest: Digest, result: ActionResult) = cache.upsertActionResult(digest, result)
-    override suspend fun checkHasMovable(digest: Digest): Path? {
-        val result = tmpDir / digest.toFileName()
-        result.collectFromFlow(read(digest) ?: return null)
-        return result
-    }
-
-    override suspend fun writeFrom(digest: Digest, src: Path) {
-        val inputFlow = tmpDir
-            .createInnerTmpHardlinkTo(src)
-            ?.inputStreamFlow(true, cacheConfig.chunkSize)
-            ?: return
-
-        write(digest).collectFrom(inputFlow)
-    }
-
-    override suspend fun read(digest: Digest) = cache.read(digest)
-    override fun write(digest: Digest) = cache.write(digest)
-
-    override suspend fun findMissing(digests: List<Digest>) = cache.findMissing(digests)
-
-    override suspend fun dispose() {
-        proc.destroy()
-        withContext(Dispatchers.IO) {
-            proc.waitFor(2, TimeUnit.SECONDS)
-        }
-    }
-
-}
-
 
 fun createCache(cacheConfig: CacheConfig): ICache {
     if (cacheConfig.remote != null && cacheConfig.local != null) {

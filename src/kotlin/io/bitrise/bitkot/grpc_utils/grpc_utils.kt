@@ -1,10 +1,9 @@
 package io.bitrise.bitkot.grpc_utils
 
 import com.google.protobuf.timestamp
-import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
-import io.grpc.Status
-import io.grpc.StatusException
+import io.grpc.*
+import io.grpc.netty.GrpcSslContexts
+import io.grpc.netty.NettyChannelBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -13,7 +12,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Instant
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 
 fun Throwable.isNotFound() = this is StatusException
         && this.status.code == Status.Code.NOT_FOUND
@@ -56,22 +58,73 @@ suspend fun<T> Flow<T>.safeCheckFirstNotFoundWithNull(): Flow<T>? {
     }
 }
 
-private fun parseEndpoint(endpoint: String): Pair<Boolean, String> {
-    if (endpoint.startsWith("grpc://"))
-        return Pair(false, endpoint.substring(7))
-    else if (endpoint.startsWith("grpcs://"))
-        return Pair(true, endpoint.substring(8))
+class TimeOutInterceptor(private val timeout: Long): ClientInterceptor {
+    override fun <ReqT : Any?, RespT : Any?> interceptCall(
+        method: MethodDescriptor<ReqT, RespT>?,
+        callOptions: CallOptions,
+        next: io.grpc.Channel
+    ): ClientCall<ReqT, RespT> {
+        return next.newCall(
+            method,
+            callOptions.withDeadlineAfter(timeout, TimeUnit.SECONDS),
+        );
+    }
 
-    throw RuntimeException("Unknown endpoint format $endpoint")
 }
 
-fun channelFromEndpoint(endpointRaw: String): ManagedChannel {
-    val (isSSL, endpoint) = parseEndpoint(endpointRaw)
+fun channelFromEndpoint(
+    endpoint: String,
+    tlsCertPath: String? = null,
+    overrideAuthority: String? = null,
+    retryCount: Int? = null,
+    timeout: Long? = null,
+    executor: Executor? = null,
+): ManagedChannel {
+    val customTls = !tlsCertPath.isNullOrEmpty()
+    var plainText: Boolean
+    val target: String = when {
+        endpoint.startsWith("grpc://") -> {
+            plainText = true
+            endpoint.removePrefix("grpc://")
+        }
+        endpoint.startsWith("grpcs://") -> {
+            plainText = false
+            endpoint.removePrefix("grpcs://")
+        }
+        endpoint.endsWith(":443") -> {
+            plainText = false
+            endpoint
+        }
+        else -> {
+            plainText = false
+            endpoint
+        }
+    }
+    if (customTls) {
+        plainText = false
+    }
+    val builder: ManagedChannelBuilder<*> = if (customTls) {
+        NettyChannelBuilder
+            .forTarget(target)
+            .sslContext(GrpcSslContexts
+                .forClient()
+                .trustManager(File(tlsCertPath!!))
+                .build())
+    } else {
+        ManagedChannelBuilder.forTarget(target)
+    }
 
-    return ManagedChannelBuilder
-        .forTarget(endpoint)
-        .apply { if (!isSSL) usePlaintext() }
-        .build()
+    retryCount?.also { builder.enableRetry().maxRetryAttempts(it) }
+    timeout?.also { builder.intercept(TimeOutInterceptor(it)) }
+    executor?.also { builder.executor(executor) }
+
+    if (plainText) {
+        builder.usePlaintext()
+    } else {
+        overrideAuthority?.also { builder.overrideAuthority(it) }
+        builder.useTransportSecurity()
+    }
+    return builder.build()
 }
 
 fun Instant.toTimestamp() = timestamp {

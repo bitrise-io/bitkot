@@ -203,6 +203,35 @@ class TaskExecutorPool(size: Int, poolName: String): CompositeDisposable() {
             }
         }
     }
+}
 
+class RetriesExhaustedException(cause: Throwable?) : Throwable(cause = cause)
 
+internal suspend fun withRetryAndTimeout(
+    retryCount: Int,
+    timeoutMillis: Long,
+    task: suspend (a: Int) -> Unit,
+    onError: (t: Throwable, a: Int, d: Long) -> Unit = {_,_,_ -> })
+{
+    var cause: Throwable? = null
+    var backoffFactor = 1L
+    for (attemptCount in 1 .. retryCount+1) {
+        val attemptStart = System.currentTimeMillis()
+        try {
+            withTimeout(timeoutMillis) {
+                task(attemptCount)
+            }
+            // if the user wants to signal that the task wasn't successful, they should just throw.
+            // if the task timed out, an error will have been thrown.
+            // if we reach this point, the task was completed, so just return and exit the loop.
+            return
+        } catch (t: Throwable) {
+            cause = t
+            onError(t, attemptCount, System.currentTimeMillis() - attemptStart)
+        }
+        // backoff
+        delay(1000L*backoffFactor)
+        backoffFactor *= 2
+    }
+    throw RetriesExhaustedException(cause = cause)
 }

@@ -46,10 +46,7 @@ class RemoteCacheWrapper(binPath: Path, dir: Path): ICache, IRemoteCache {
 
     private val cache = createRemoteCache(
         dir,
-        RemoteCacheConfig(
-            endpoint = "grpc://127.0.0.1:9092",
-            headers = mapOf(),
-        )
+        RemoteCacheConfig(endpoint = "grpc://127.0.0.1:9092")
     )
 
     override suspend fun getActionResult(digest: Digest) = cache.getActionResult(digest)

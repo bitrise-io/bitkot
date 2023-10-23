@@ -6,11 +6,11 @@ defs = struct(
         "@io_grpc_grpc_java//stub",
     ],
     KOTLIN_STD = [
-        "@com_github_jetbrains_kotlin//:kotlin-stdlib-jdk7",
-        "@com_github_jetbrains_kotlin//:kotlin-stdlib-jdk8",
+        "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib-jdk7",
+        "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib-jdk8",
     ],
     TEST_DEPS = [
-        "@com_github_jetbrains_kotlin//:kotlin-test",
+        "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-test",
         "@junit_junit//jar",
         "@org_jetbrains_kotlinx_kotlinx_coroutines_test//jar",
     ],

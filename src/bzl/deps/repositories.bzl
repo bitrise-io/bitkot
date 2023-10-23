@@ -57,12 +57,10 @@ def aspect_bazel_lib():
 
 
 def io_bazel_rules_kotlin():
-    io_bazel_rules_kotlin_version = "1.8"
-    io_bazel_rules_kotlin_sha = "01293740a16e474669aba5b5a1fe3d368de5832442f164e4fbfc566815a8bc3a"
     http_archive(
         name = "io_bazel_rules_kotlin",
-        url = "https://github.com/bazelbuild/rules_kotlin/releases/download/v%s/rules_kotlin_release.tgz" % io_bazel_rules_kotlin_version,
-        sha256 = io_bazel_rules_kotlin_sha,
+        sha256 = "5766f1e599acf551aa56f49dab9ab9108269b03c557496c54acaf41f98e2b8d6",
+        url = "https://github.com/bazelbuild/rules_kotlin/releases/download/v1.9.0/rules_kotlin-v1.9.0.tar.gz",
     )
 
 

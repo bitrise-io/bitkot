@@ -1,7 +1,6 @@
 package io.bitrise.bitkot.cache.remote
 
 import io.bitrise.bitkot.cache.iface.*
-import io.bitrise.bitkot.grpc_utils.channelFromEndpoint
 import io.bitrise.bitkot.grpc_utils.getOrNullIfNotFound
 import io.bitrise.bitkot.utils.Disposable
 import io.bitrise.bitkot.utils.createInnerTmpHardlinkTo
@@ -23,7 +22,11 @@ import kotlin.time.Duration.Companion.seconds
 
 const val zeroHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
-interface IRemoteCache: ICache, IStreamCache, Disposable
+interface IRemoteCache: ICache, IStreamCache, Disposable {
+
+    fun isWriteEnabled(): Boolean
+
+}
 
 private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWriter {
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -53,21 +56,22 @@ private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWrit
 
 private const val binaryRequestMetadataKey = "build.bazel.remote.execution.v2.requestmetadata-bin"
 
-private class RemoteCache(directory: Path, private val config: RemoteCacheConfig): IRemoteCache {
+private class RemoteCache(
+    directory: Path,
+    private val channel: ManagedChannel,
+    private val config: RemoteCacheRpcConfig,
+): IRemoteCache {
     private val tmpDir = (directory / "remote_tmp")
         .apply { toFile().mkdirs() }
-    private val channel = channelFromEndpoint(config.endpoint)
-    private val invocationId = UUID.randomUUID().toString()
     private val requestMetadata = Metadata().apply {
         config.headers.forEach {
             put(Metadata.Key.of(it.key, Metadata.ASCII_STRING_MARSHALLER), it.value)
         }
-        put(Metadata.Key.of("X-Flare-BuildUser", Metadata.ASCII_STRING_MARSHALLER), System.getProperty("user.name"))
         put(Metadata.Key.of(binaryRequestMetadataKey, Metadata.BINARY_BYTE_MARSHALLER),
             requestMetadata {
-                toolInvocationId = invocationId
+                toolInvocationId = config.invocationId
                 toolDetails = toolDetails {
-                    toolName = "bitkot_bazel"
+                    toolName = config.toolName
                 }
             }.toByteArray()
         )
@@ -79,6 +83,7 @@ private class RemoteCache(directory: Path, private val config: RemoteCacheConfig
         override fun thisUsesUnstableApi() {}
     })
 
+    private var writeEnabled: Boolean? = null
     private val actionCache = ActionCacheGrpcKt.ActionCacheCoroutineStub(channel, clientCallOptions)
     private val cas = ContentAddressableStorageGrpcKt.ContentAddressableStorageCoroutineStub(channel, clientCallOptions)
     private val bs = ByteStreamGrpcKt.ByteStreamCoroutineStub(channel, clientCallOptions)
@@ -88,19 +93,19 @@ private class RemoteCache(directory: Path, private val config: RemoteCacheConfig
 
     init {
         runBlocking {
-            withTimeout(5000) {
-                val c = caps.getCapabilities(getCapabilitiesRequest {  })
-                if(!checkServerCapabilities(c)) {
-                    throw Error("unsupported server backend")
-                }
+            val c = caps.getCapabilities(getCapabilitiesRequest {  })
+            if(!checkServerCapabilities(c)) {
+                throw Error("The remote server has missing or unsupported cache capabilities.")
             }
         }
     }
 
+    override fun isWriteEnabled() = writeEnabled ?: false
+
     private fun checkServerCapabilities(capabilities: ServerCapabilities): Boolean {
         if(!capabilities.hasCacheCapabilities()) return false
         // todo: updateEnabled and turn off uploads accordingly?
-        //writeEnabled = capabilities.cacheCapabilities.actionCacheUpdateCapabilities.updateEnabled
+        writeEnabled = capabilities.cacheCapabilities.actionCacheUpdateCapabilities.updateEnabled
         return capabilities.cacheCapabilities.digestFunctionsList.any {
             it == DigestFunction.Value.SHA256
         } && capabilities.cacheCapabilities.symlinkAbsolutePathStrategy == SymlinkAbsolutePathStrategy.Value.ALLOWED
@@ -150,6 +155,10 @@ private class RemoteCache(directory: Path, private val config: RemoteCacheConfig
 
     @OptIn(FlowPreview::class)
     override fun write(digest: Digest): IWriter {
+        if (writeEnabled == false) {
+            throw Error("no writes possible due to server capabilities")
+        }
+
         return ChannelWriter { f ->
             var first = true
             var offset = 0L
@@ -159,7 +168,7 @@ private class RemoteCache(directory: Path, private val config: RemoteCacheConfig
                     writeRequest {
                         if (first) {
                             first = false
-                            resourceName = "bitblaze/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
+                            resourceName = "${config.toolName}/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
                         }
                         writeOffset = offset
                         finishWrite = it.isEmpty
@@ -181,5 +190,21 @@ private class RemoteCache(directory: Path, private val config: RemoteCacheConfig
 
 }
 
-fun createRemoteCache(directory: Path, config: RemoteCacheConfig): IRemoteCache =
-    RemoteCache(directory, config)
+fun createRemoteCache(
+    directory: Path,
+    channel: ManagedChannel,
+    rpcConfig: RemoteCacheRpcConfig,
+): IRemoteCache = RemoteCache(
+    directory,
+    channel,
+    rpcConfig,
+)
+
+fun createRemoteCache(
+    directory: Path,
+    config: RemoteCacheConfig,
+) = createRemoteCache(
+    directory,
+    config.toManagedChannel(),
+    config.rpcConfig,
+)

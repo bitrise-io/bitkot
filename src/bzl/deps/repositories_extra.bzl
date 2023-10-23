@@ -82,12 +82,12 @@ IO_BITRISE_BITKOT_ARTIFACTS = [
 IO_BITRISE_BITKOT_ALL_ARTIFACTS = IO_GRPC_GRPC_JAVA_ARTIFACTS + IO_GRPC_GRPC_KOTLIN_ARTIFACTS + IO_BITRISE_BITKOT_ARTIFACTS
 
 IO_BITRISE_BITKOT_OVERRIDE_TARGETS = {
-    "org.jetbrains.kotlin:kotlin-stdlib-common": "@com_github_jetbrains_kotlin//:kotlin-stdlib",
-    "org.jetbrains.kotlin:kotlin-stdlib": "@com_github_jetbrains_kotlin//:kotlin-stdlib",
-    "org.jetbrains.kotlin:kotlin-stdlib-jdk7": "@com_github_jetbrains_kotlin//:kotlin-stdlib-jdk7",
-    "org.jetbrains.kotlin:kotlin-stdlib-jdk8": "@com_github_jetbrains_kotlin//:kotlin-stdlib-jdk8",
-    "org.jetbrains.kotlin:kotlin-script-runtime": "@com_github_jetbrains_kotlin//:kotlin-script-runtime",
-    "org.jetbrains.kotlin:kotlin-reflect": "@com_github_jetbrains_kotlin//:kotlin-reflect",
+    "org.jetbrains.kotlin:kotlin-stdlib-common": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib",
+    "org.jetbrains.kotlin:kotlin-stdlib": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib",
+    "org.jetbrains.kotlin:kotlin-stdlib-jdk7": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib-jdk7",
+    "org.jetbrains.kotlin:kotlin-stdlib-jdk8": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-stdlib-jdk8",
+    "org.jetbrains.kotlin:kotlin-script-runtime": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-script-runtime",
+    "org.jetbrains.kotlin:kotlin-reflect": "@io_bazel_rules_kotlin//kotlin/compiler:kotlin-reflect",
 }
 
 IO_BITRISE_BITKOT_ALL_OVERRIDE_TARGETS = dict(IO_GRPC_GRPC_KOTLIN_OVERRIDE_TARGETS.items() + IO_GRPC_GRPC_JAVA_OVERRIDE_TARGETS.items() + IO_BITRISE_BITKOT_OVERRIDE_TARGETS.items())

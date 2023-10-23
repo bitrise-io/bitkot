@@ -3,21 +3,22 @@ load("@bazel_skylib//rules:write_file.bzl", "write_file")
 load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
 load("@aspect_bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("@io_bazel_rules_kotlin//src/main/starlark/core/repositories:versions.bzl", _kt_versions = "versions")
-
 load("//src/bzl/copy_protos:copy_protos.bzl", "copy_protos")
 load("//src/bzl/gradle_utils:gradle_utils.bzl", "parse_deps_for_gradle", "vc_library", "vc_plugin")
-load("//src/bzl/deps:repositories.bzl", 
-    "GRPC_JAVA_VERSION", 
-    "GRPC_KOTLIN_VERSION", 
+load(
+    "//src/bzl/deps:repositories.bzl",
+    "GRPC_JAVA_VERSION",
+    "GRPC_KOTLIN_VERSION",
     "PROTOBUF_VERSION",
 )
-load("//src/bzl/deps:repositories_extra.bzl", 
+load(
+    "//src/bzl/deps:repositories_extra.bzl",
     "IO_BITRISE_BITKOT_ARTIFACTS",
-    "NETTY_VERSION",
     "KOTLINX_COROUTINES_VERSION",
     "KOTLINX_SERIALIZATION_VERSION",
-    "RSOCKET_VERSION",
+    "NETTY_VERSION",
     "REACTOR_VERSION",
+    "RSOCKET_VERSION",
 )
 
 copy_file(
@@ -35,24 +36,18 @@ copy_file(
 )
 
 _PROTOBUF_VERSION = "3.%s" % PROTOBUF_VERSION
+
 _KOTLIN_VERSION = _kt_versions.KOTLIN_CURRENT_COMPILER_RELEASE.version
 
 _GRADLE_DEPS = parse_deps_for_gradle(
-    versions = {
-        "kotlin": _KOTLIN_VERSION,
-        "grpc-java": GRPC_JAVA_VERSION,
-        "grpc-kotlin": GRPC_KOTLIN_VERSION,
-        "protobuf": _PROTOBUF_VERSION,
-        "protobuf-plugin": "0.9.4",
-        "netty": NETTY_VERSION,
-        "kotlinx-coroutines": KOTLINX_COROUTINES_VERSION,
-        "kotlinx-serialization": KOTLINX_SERIALIZATION_VERSION,
-        "rsocket": RSOCKET_VERSION,
-        "reactor": REACTOR_VERSION,
-    },
+    artifacts = IO_BITRISE_BITKOT_ARTIFACTS,
     libraries = {
         "grpc-protobuf": vc_library(
             module = "io.grpc:grpc-protobuf",
+            version_ref = "grpc-java",
+        ),
+        "grpc-core": vc_library(
+            module = "io.grpc:grpc-core",
             version_ref = "grpc-java",
         ),
         "grpc-netty": vc_library(
@@ -65,18 +60,18 @@ _GRADLE_DEPS = parse_deps_for_gradle(
         ),
         "protoc-compiler": vc_library(
             module = "com.google.protobuf:protoc",
-            version_ref = "protobuf",
             skip_dep = True,
+            version_ref = "protobuf",
         ),
         "protoc-java": vc_library(
             module = "io.grpc:protoc-gen-grpc-java",
-            version_ref = "grpc-java",
             skip_dep = True,
+            version_ref = "grpc-java",
         ),
         "protoc-kotlin": vc_library(
             module = "io.grpc:protoc-gen-grpc-kotlin",
-            version_ref = "grpc-kotlin",
             skip_dep = True,
+            version_ref = "grpc-kotlin",
         ),
         "protobuf-java": vc_library(
             module = "com.google.protobuf:protobuf-java",
@@ -109,9 +104,19 @@ _GRADLE_DEPS = parse_deps_for_gradle(
             version_ref = "protobuf-plugin",
         ),
     },
-    artifacts = IO_BITRISE_BITKOT_ARTIFACTS,
+    versions = {
+        "kotlin": _KOTLIN_VERSION,
+        "grpc-java": GRPC_JAVA_VERSION,
+        "grpc-kotlin": GRPC_KOTLIN_VERSION,
+        "protobuf": _PROTOBUF_VERSION,
+        "protobuf-plugin": "0.9.4",
+        "netty": NETTY_VERSION,
+        "kotlinx-coroutines": KOTLINX_COROUTINES_VERSION,
+        "kotlinx-serialization": KOTLINX_SERIALIZATION_VERSION,
+        "rsocket": RSOCKET_VERSION,
+        "reactor": REACTOR_VERSION,
+    },
 )
-
 
 write_file(
     name = "write_version_catalog",
@@ -119,28 +124,26 @@ write_file(
     content = _GRADLE_DEPS.to_version_catalog(),
 )
 
-
 expand_template(
     name = "expand_build_gradle_kts_tpl",
-    template = "//src/conf:build.gradle.kt.tpl",
     substitutions = {
         "%%plugins%%": _GRADLE_DEPS.to_plugins(),
         "%%libraries%%": _GRADLE_DEPS.to_libraries(),
         "%%artifacts%%": _GRADLE_DEPS.to_artifacts(),
     },
+    template = "//src/conf:build.gradle.kt.tpl",
 )
-
 
 copy_protos(
     name = "copy_protos",
+    include_external_repositories = [
+        "com_github_bazelbuild_remote_apis",
+        "googleapis",
+    ],
     deps = [
         "//src/proto/kv_storage:kv_storage_proto",
         "@com_github_bazelbuild_remote_apis//build/bazel/remote/execution/v2:remote_execution_proto",
         "@googleapis//google/bytestream:bytestream_proto",
-    ],
-    include_external_repositories = [
-        "com_github_bazelbuild_remote_apis",
-        "googleapis",
     ],
 )
 
@@ -151,4 +154,5 @@ write_source_files(
         "gradlegen/proto": ":copy_protos",
         "gradlegen/libs.versions.toml": ":write_version_catalog",
     },
+    tags = ["manual"],
 )
