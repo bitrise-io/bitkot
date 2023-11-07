@@ -26,6 +26,7 @@ KOTLINX_COROUTINES_VERSION = "1.7.3"
 KOTLINX_SERIALIZATION_VERSION = "1.6.0"
 RSOCKET_VERSION = "1.1.4"
 REACTOR_VERSION = "1.1.12"
+OSHAI_KOTLIN_LOGGING_VERSION = "5.1.0"
 
 IO_BITRISE_BITKOT_ARTIFACTS = [
     "com.google.protobuf:protobuf-java:3.%s" % PROTOBUF_VERSION,
@@ -77,6 +78,7 @@ IO_BITRISE_BITKOT_ARTIFACTS = [
     "io.rsocket:rsocket-core:%s" % RSOCKET_VERSION,
     "io.rsocket:rsocket-transport-netty:%s" % RSOCKET_VERSION,
     "io.projectreactor.netty:reactor-netty:%s" % REACTOR_VERSION,
+    "io.github.oshai:kotlin-logging-jvm:%s" % OSHAI_KOTLIN_LOGGING_VERSION,
 ]
 
 IO_BITRISE_BITKOT_ALL_ARTIFACTS = IO_GRPC_GRPC_JAVA_ARTIFACTS + IO_GRPC_GRPC_KOTLIN_ARTIFACTS + IO_BITRISE_BITKOT_ARTIFACTS

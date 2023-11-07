@@ -6,9 +6,9 @@ import io.rsocket.transport.netty.client.TcpClientTransport
 import reactor.netty.tcp.TcpClient
 import java.net.InetSocketAddress
 
-fun createRsocketClient(endpoint: String, port: Int): RSocket {
+fun createRsocketClient(host: String, port: Int): RSocket {
     var client = TcpClient.create()
-        .remoteAddress { InetSocketAddress(endpoint, port) }
+        .remoteAddress { InetSocketAddress(host, port) }
     if (port == 443) {
         client = client.secure()
     }

@@ -17,6 +17,7 @@ load(
     "KOTLINX_COROUTINES_VERSION",
     "KOTLINX_SERIALIZATION_VERSION",
     "NETTY_VERSION",
+    "OSHAI_KOTLIN_LOGGING_VERSION",
     "REACTOR_VERSION",
     "RSOCKET_VERSION",
 )
@@ -93,6 +94,10 @@ _GRADLE_DEPS = parse_deps_for_gradle(
             module = "io.rsocket:rsocket-core",
             version_ref = "rsocket",
         ),
+        "oshai-logging": vc_library(
+            module = "io.github.oshai:kotlin-logging-jvm",
+            version_ref = "oshai-logging",
+        ),
     },
     plugins = {
         "kotlin-jvm": vc_plugin(
@@ -115,6 +120,7 @@ _GRADLE_DEPS = parse_deps_for_gradle(
         "kotlinx-serialization": KOTLINX_SERIALIZATION_VERSION,
         "rsocket": RSOCKET_VERSION,
         "reactor": REACTOR_VERSION,
+        "oshai-logging": OSHAI_KOTLIN_LOGGING_VERSION,
     },
 )
 

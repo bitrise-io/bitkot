@@ -1,7 +1,8 @@
 package io.bitrise.bitkot.utils
 
-import java.util.logging.Logger
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 
-fun <T: Any> T.logger(): Logger {
-    return Logger.getLogger(this.javaClass.name)
-}
+val <T: Any> T.L: KLogger
+    get() = KotlinLogging.logger(this.javaClass.name)
+
