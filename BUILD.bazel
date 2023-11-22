@@ -90,6 +90,10 @@ _GRADLE_DEPS = parse_deps_for_gradle(
             module = "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm",
             version_ref = "kotlinx-serialization",
         ),
+        "kotlinx-serialization-protobuf": vc_library(
+            module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf",
+            version_ref = "kotlinx-serialization",
+        ),
         "rsocket-core": vc_library(
             module = "io.rsocket:rsocket-core",
             version_ref = "rsocket",
@@ -102,6 +106,10 @@ _GRADLE_DEPS = parse_deps_for_gradle(
     plugins = {
         "kotlin-jvm": vc_plugin(
             id = "org.jetbrains.kotlin.jvm",
+            version_ref = "kotlin",
+        ),
+        "kotlin-plugin-serialization": vc_plugin(
+            id = "org.jetbrains.kotlin.plugin.serialization",
             version_ref = "kotlin",
         ),
         "protobuf": vc_plugin(
