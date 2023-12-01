@@ -56,12 +56,12 @@ private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWrit
 
 private const val binaryRequestMetadataKey = "build.bazel.remote.execution.v2.requestmetadata-bin"
 
-private class RemoteCache(
+class RemoteCache(
     directory: Path,
     private val channel: ManagedChannel,
     private val config: RemoteCacheRpcConfig,
 ): IRemoteCache {
-    private val tmpDir = (directory / "remote_tmp")
+    val tmpDir = (directory / "remote_tmp")
         .apply { toFile().mkdirs() }
     private val requestMetadata = Metadata().apply {
         config.headers.forEach {
@@ -143,7 +143,7 @@ private class RemoteCache(
         = if (digest.hash != zeroHash)
             runCatching {
                 val mappedFlow = bs.read(readRequest {
-                    resourceName = "bitkot/blobs/${digest.hash}/${digest.sizeBytes}"
+                    resourceName = "${config.instanceName}/blobs/${digest.hash}/${digest.sizeBytes}"
                 }).map { it.data }
 
                 mappedFlow.first()
@@ -194,7 +194,7 @@ fun createRemoteCache(
     directory: Path,
     channel: ManagedChannel,
     rpcConfig: RemoteCacheRpcConfig,
-): IRemoteCache = RemoteCache(
+) = RemoteCache(
     directory,
     channel,
     rpcConfig,

@@ -1,5 +1,6 @@
 package io.bitrise.bitkot.utils
 
+import com.google.protobuf.ByteString
 import kotlin.coroutines.*
 import kotlinx.coroutines.*
 import io.netty.util.concurrent.Future
@@ -7,6 +8,7 @@ import io.netty.util.concurrent.GenericFutureListener
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
 import java.io.Closeable
+import java.io.InputStream
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -234,4 +236,43 @@ internal suspend fun withRetryAndTimeout(
         backoffFactor *= 2
     }
     throw RetriesExhaustedException(cause = cause)
+}
+
+
+fun Flow<ByteString>.asInputStream(coroutineScope: CoroutineScope) = object: InputStream() {
+    val chan = Channel<ByteString>(Channel.UNLIMITED)
+    val chanIt = chan.iterator()
+    var closed = false
+    val job = coroutineScope
+        .launch { this@asInputStream.collect(chan::send) }
+
+    var curDataIt: ByteString.ByteIterator? = null
+
+    override fun read(): Int {
+        if (closed)
+            return -1
+
+        curDataIt?.let {
+            if (!it.hasNext()) {
+                curDataIt = null
+                return@let
+            }
+            return it.nextByte().toInt()
+        }
+        curDataIt = null
+
+        if (!runBlocking { chanIt.hasNext() }) {
+            closed = true
+            return -1
+        }
+
+        curDataIt = chanIt.next().iterator()
+        return read()
+    }
+
+    override fun close() {
+        super.close()
+        job.cancel()
+    }
+
 }
