@@ -18,7 +18,6 @@ data class ChannelConfig(
 
 @Serializable
 data class RemoteCacheRpcConfig(
-    @SerialName("instance_name") val instanceName: String = "bitkot",
     @SerialName("invocation_id") val invocationId: String = UUID.randomUUID().toString(),
     @SerialName("headers") val headers: Map<String, String> = mapOf(),
     @SerialName("chunk_size") val chunkSize: Int = kDefaultChunkSize,

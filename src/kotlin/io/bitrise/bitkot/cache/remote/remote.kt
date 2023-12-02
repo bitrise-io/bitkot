@@ -139,12 +139,15 @@ class RemoteCache(
         write(digest).collectFrom(inputFlow)
     }
 
+    private fun readResourceName(digest: Digest)
+        = "${config.toolName}/blobs/${digest.hash}/${digest.sizeBytes}"
+
     override suspend fun read(digest: Digest)
         = if (digest.hash != zeroHash)
             runCatching {
-                val mappedFlow = bs.read(readRequest {
-                    resourceName = "${config.instanceName}/blobs/${digest.hash}/${digest.sizeBytes}"
-                }).map { it.data }
+                val mappedFlow = bs
+                    .read(readRequest { resourceName = readResourceName(digest) })
+                    .map { it.data }
 
                 mappedFlow.first()
                 mappedFlow
@@ -152,6 +155,8 @@ class RemoteCache(
         else
             flow { emit(ByteString.EMPTY) }
 
+    private fun writeResourceName(digest: Digest)
+        = "${config.toolName}/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
 
     @OptIn(FlowPreview::class)
     override fun write(digest: Digest): IWriter {
@@ -168,7 +173,7 @@ class RemoteCache(
                     writeRequest {
                         if (first) {
                             first = false
-                            resourceName = "${config.toolName}/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
+                            resourceName = writeResourceName(digest)
                         }
                         writeOffset = offset
                         finishWrite = it.isEmpty
