@@ -22,10 +22,9 @@ import kotlin.time.Duration.Companion.seconds
 
 const val zeroHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
+
 interface IRemoteCache: ICache, IStreamCache, Disposable {
-
-    fun isWriteEnabled(): Boolean
-
+    suspend fun serverCapabilities(): ServerCapabilities
 }
 
 private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWriter {
@@ -91,25 +90,7 @@ class RemoteCache(
 
     private val rateLimiter = config.mbpsWriteLimit?.let { RateLimiter(it * 128L * 1024L, 1L.seconds) }
 
-    init {
-        runBlocking {
-            val c = caps.getCapabilities(getCapabilitiesRequest {  })
-            if(!checkServerCapabilities(c)) {
-                throw Error("The remote server has missing or unsupported cache capabilities.")
-            }
-        }
-    }
-
-    override fun isWriteEnabled() = writeEnabled ?: false
-
-    private fun checkServerCapabilities(capabilities: ServerCapabilities): Boolean {
-        if(!capabilities.hasCacheCapabilities()) return false
-        // todo: updateEnabled and turn off uploads accordingly?
-        writeEnabled = capabilities.cacheCapabilities.actionCacheUpdateCapabilities.updateEnabled
-        return capabilities.cacheCapabilities.digestFunctionsList.any {
-            it == DigestFunction.Value.SHA256
-        } && capabilities.cacheCapabilities.symlinkAbsolutePathStrategy == SymlinkAbsolutePathStrategy.Value.ALLOWED
-    }
+    override suspend fun serverCapabilities() = caps.getCapabilities(getCapabilitiesRequest {})
 
     override suspend fun getActionResult(digest: Digest): ActionResult? = runCatching {
         actionCache.getActionResult(getActionResultRequest {
@@ -117,12 +98,10 @@ class RemoteCache(
         })
     }.getOrNullIfNotFound()
 
-    override suspend fun upsertActionResult(digest: Digest, result: ActionResult) {
-        actionCache.updateActionResult(updateActionResultRequest {
-            actionDigest = digest
-            actionResult = result
-        })
-    }
+    override suspend fun upsertActionResult(digest: Digest, result: ActionResult) = actionCache.updateActionResult(updateActionResultRequest {
+        actionDigest = digest
+        actionResult = result
+    }).voidify()
 
     override suspend fun checkHasMovable(digest: Digest): Path? {
         val result = tmpDir / digest.toFileName()

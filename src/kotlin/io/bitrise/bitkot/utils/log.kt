@@ -15,6 +15,17 @@ abstract class BitLogger {
 
     abstract fun warning(d: () -> Any?)
     fun warning(vararg i: String) = warning { i.joinToString("\n") { it.trim() } }
+
+    abstract fun printConsole(d: () -> Any?)
+    fun printConsole(vararg i: String) = printConsole { i.joinToString("\n") { it.trim() } }
+}
+
+fun (() -> Any?).toStringSafe(): String {
+    return try {
+        invoke().toString()
+    } catch (e: Exception) {
+        e.toString()
+    }
 }
 
 typealias LoggerFactory = (BitLogging.PkgContext) -> BitLogger
@@ -90,6 +101,7 @@ object BitLogging {
             override fun debug(d: () -> Any?) = logger.debug(d)
             override fun error(d: () -> Any?) = logger.error(d)
             override fun warning(d: () -> Any?) = logger.warn(d)
+            override fun printConsole(d: () -> Any?) = println(d.toStringSafe())
         }
     }
 
@@ -105,6 +117,7 @@ class LoggerWrapper(pkg: String): BitLogger() {
     override fun debug(d: () -> Any?) = logger.debug(d)
     override fun error(d: () -> Any?) = logger.error(d)
     override fun warning(d: () -> Any?) = logger.warning(d)
+    override fun printConsole(d: () -> Any?) = logger.printConsole(d)
 }
 
 fun <T: Any> T.createBitLogger() = LoggerWrapper(this.javaClass.name)
