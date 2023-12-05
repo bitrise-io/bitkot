@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
@@ -69,10 +70,14 @@ class BSFlowAsInputStream(
     flow: Flow<ByteString>,
     coroutineScope: CoroutineScope,
 ): InputStream() {
-    private val chan = Channel<ByteString>(Channel.UNLIMITED)
+    private val chan = Channel<ByteString?>(Channel.RENDEZVOUS)
     private val chanIt = chan.iterator()
     private var closed = false
-    private val job = coroutineScope.launch { flow.collect(chan::send) }
+    private val job = coroutineScope.launch {
+        flow.collect(chan::send)
+        chan.send(null)
+    }
+    private var curData: ByteString? = null
     private var curDataIt: ByteString.ByteIterator? = null
 
     var bytesRead: Long = 0
@@ -81,27 +86,42 @@ class BSFlowAsInputStream(
         if (closed)
             return -1
 
+        val resByte = readDetail()
+            ?: return -1
+
+        return (resByte.toUInt() and 0xFFu).toInt()
+    }
+
+    private fun readDetail(): Byte? {
         curDataIt?.let {
             if (!it.hasNext()) {
-                curDataIt = null
                 return@let
             }
             ++bytesRead
-            return it.nextByte().toInt()
+            return it.nextByte()
         }
+        curData = null
         curDataIt = null
 
         if (!runBlocking { chanIt.hasNext() }) {
-            closed = true
-            return -1
+            close()
+            return null
         }
 
-        curDataIt = chanIt.next().iterator()
-        return read()
+        curData = chanIt.next()
+        if (curData != null) {
+            curDataIt = curData?.iterator()
+            return readDetail()
+        } else {
+            close()
+            return null
+        }
     }
 
     override fun close() {
         super.close()
+        closed = true
+        chan.close()
         job.cancel()
     }
 }
