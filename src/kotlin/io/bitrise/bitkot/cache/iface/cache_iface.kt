@@ -70,7 +70,6 @@ suspend fun IWriter.collectFrom(dataFlow: Flow<ByteString>) {
 interface IStreamCache {
     suspend fun read(digest: Digest): Flow<ByteString>?
     fun write(digest: Digest): IWriter
-
 }
 
 interface IActionCache {

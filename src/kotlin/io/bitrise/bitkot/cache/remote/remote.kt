@@ -11,7 +11,7 @@ import com.google.bytestream.*
 import io.grpc.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.channels.Channel
 import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.Executor
@@ -27,9 +27,16 @@ interface IRemoteCache: ICache, IStreamCache, Disposable {
     suspend fun serverCapabilities(): ServerCapabilities
 }
 
-private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWriter {
+private class ErrorInitializedWriter(private val error: Throwable): IWriter {
+    override suspend fun write(data: ByteString) = throw error
+    override suspend fun write(data: ByteArray) = throw error
+    override suspend fun commit() {}
+    override fun close() {}
+}
+
+private open class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWriter {
     private val scope = CoroutineScope(Dispatchers.IO)
-    private val channel = Channel<ByteString>(0)
+    private val channel = Channel<ByteString>(Channel.RENDEZVOUS)
     private val deferred = scope
         .async { consumer(channel.consumeAsFlow()) }
 
@@ -40,16 +47,66 @@ private class ChannelWriter(consumer: suspend (Flow<ByteString>) -> Unit): IWrit
         = channel.send(ByteString.copyFrom(data))
 
     override suspend fun commit() {
-        channel.send(ByteString.EMPTY)
-        // actually, need to close the connection here which sends an EOF; which means "closing the channel"
-        // because the kotlin grpc impl uses this channel interface, but this is NOT "closing the grpc channel"
-        channel.close()
-        deferred.await()
+        close()
     }
 
     override fun close() {
+        // actually, need to close the connection here which sends an EOF; which means "closing the channel"
+        // because the kotlin grpc impl uses this channel interface, but this is NOT "closing the grpc channel"
         channel.close()
         deferred.cancel()
+    }
+}
+
+private class ByteStreamWriter(
+    logger: BitLogger,
+    bs: ByteStreamGrpcKt.ByteStreamCoroutineStub,
+    rateLimiter: RateLimiter?,
+    digest: Digest,
+    writeResourceName: String,
+    private val deferredComplete: CompletableDeferred<Unit> = CompletableDeferred<Unit>()
+): ChannelWriter({ f ->
+    var first = true
+    var offset = 0L
+    val resp = bs.write(f.map {
+        if ((offset + it.size()) > digest.sizeBytes)
+            throw Error(
+                "can't send write request for digest ${digest.toFileName()}, "+
+                "next size will be ${offset + it.size()}, " +
+                "but requested is ${digest.sizeBytes}"
+            )
+
+        rateLimiter?.awaitQuota(it.size().toLong())
+        try {
+            val req = writeRequest {
+                if (first) {
+                    first = false
+                    resourceName = writeResourceName
+                }
+                writeOffset = offset
+                finishWrite = (offset + it.size()) == digest.sizeBytes
+                data = it
+            }
+            logger.debug(
+                "sending write request for digest ${digest.toFileName()}:",
+                "* offset - ${req.writeOffset}",
+                "* size - ${req.data.size()}",
+                "* finishWrite - ${req.finishWrite}",
+            )
+            req
+        } finally {
+            offset += it.size()
+        }
+    })
+    logger.debug(
+        "write end for digest ${digest.toFileName()}:",
+        "* committed size - ${resp.committedSize}",
+    )
+    deferredComplete.complete(Unit)
+}) {
+    override suspend fun commit() {
+        deferredComplete.await()
+        super.commit()
     }
 }
 
@@ -62,6 +119,7 @@ class RemoteCache(
 ): IRemoteCache {
     val tmpDir = (directory / "remote_tmp")
         .apply { toFile().mkdirs() }
+    private val logger = createBitLogger()
     private val requestMetadata = Metadata().apply {
         config.headers.forEach {
             put(Metadata.Key.of(it.key, Metadata.ASCII_STRING_MARSHALLER), it.value)
@@ -82,7 +140,6 @@ class RemoteCache(
         override fun thisUsesUnstableApi() {}
     })
 
-    private var writeEnabled: Boolean? = null
     private val actionCache = ActionCacheGrpcKt.ActionCacheCoroutineStub(channel, clientCallOptions)
     private val cas = ContentAddressableStorageGrpcKt.ContentAddressableStorageCoroutineStub(channel, clientCallOptions)
     private val bs = ByteStreamGrpcKt.ByteStreamCoroutineStub(channel, clientCallOptions)
@@ -112,8 +169,7 @@ class RemoteCache(
     override suspend fun writeFrom(digest: Digest, src: Path) {
         val inputFlow = tmpDir
             .createInnerTmpHardlinkTo(src)
-            ?.inputStreamFlow(true, config.chunkSize)
-            ?: return
+            .inputStreamFlow(true, config.chunkSize)
 
         write(digest).collectFrom(inputFlow)
     }
@@ -134,35 +190,20 @@ class RemoteCache(
         else
             flow { emit(ByteString.EMPTY) }
 
+
     private fun writeResourceName(digest: Digest)
         = "${config.toolName}/uploads/${UUID.randomUUID()}/blobs/${digest.hash}/${digest.sizeBytes}"
 
-    @OptIn(FlowPreview::class)
     override fun write(digest: Digest): IWriter {
-        if (writeEnabled == false) {
-            throw Error("no writes possible due to server capabilities")
-        }
+        if (digest.hash == zeroHash)
+            return ErrorInitializedWriter(Error("no writes possible, hash is zero hash"))
+        if (digest.sizeBytes <= 0)
+            return ErrorInitializedWriter(Error("no writes possible, digest.sizeBytes has wrong value: ${digest.sizeBytes}"))
 
-        return ChannelWriter { f ->
-            var first = true
-            var offset = 0L
-            bs.write(f.map {
-                rateLimiter?.awaitQuota(it.size().toLong())
-                try {
-                    writeRequest {
-                        if (first) {
-                            first = false
-                            resourceName = writeResourceName(digest)
-                        }
-                        writeOffset = offset
-                        finishWrite = it.isEmpty
-                        data = it
-                    }
-                } finally {
-                    offset += it.size()
-                }
-            })
-        }
+        return ByteStreamWriter(
+            logger, bs, rateLimiter, digest,
+            writeResourceName(digest),
+        )
     }
 
     override suspend fun findMissing(digests: List<Digest>): List<Digest> =

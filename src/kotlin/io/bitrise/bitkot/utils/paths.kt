@@ -16,37 +16,26 @@ fun makePath(strPath: String): Path {
     return Path.of(strPath)
 }
 
-private fun createInnerTmpHardlinkToDetail(src: Path, dst: Path): Path? {
-    try {
-        dst.createLinkPointingTo(src)
-    } catch (_: Throwable) {
-        return null
-    }
-    return dst
-}
+private fun createInnerTmpHardlinkToDetail(src: Path, dst: Path)
+    = dst.createLinkPointingTo(src)
 
 fun Path.createInnerTmpHardlinkTo(src: Path)
     = createInnerTmpHardlinkToDetail(src, resolve(UUID.randomUUID().toString()))
 
-private fun createInnerTmpCopyToDetail(src: Path, dst: Path): Path? {
-    try {
-        src.copyTo(dst)
-    } catch (_: Throwable) {
-        return null
+private fun createInnerTmpCopyToDetail(src: Path, dst: Path)
+    = src.copyTo(dst)
+
+fun Path.createInnerTmpCopyTo(src: Path)
+    = createInnerTmpCopyToDetail(src, resolve(UUID.randomUUID().toString()))
+
+fun Path.createInnerTmpHardlinkOrCopyTo(src: Path)
+    = resolve(UUID.randomUUID().toString()).let {
+        try {
+            createInnerTmpHardlinkToDetail(src, it)
+        } catch (_: Throwable) {
+            createInnerTmpCopyToDetail(src, it)
+        }
     }
-    return dst
-}
-
-fun Path.createInnerTmpCopyTo(src: Path): Path? {
-    val dst = resolve(UUID.randomUUID().toString())
-    return createInnerTmpCopyToDetail(src, dst)
-}
-
-fun Path.createInnerTmpHardlinkOrCopyTo(src: Path): Path? {
-    val dst = resolve(UUID.randomUUID().toString())
-    return createInnerTmpHardlinkToDetail(src, dst)
-        ?: createInnerTmpCopyToDetail(src, dst)
-}
 
 fun cwd(): Path = Paths.get("").toAbsolutePath()
 

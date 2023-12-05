@@ -6,22 +6,14 @@ import io.bitrise.bitkot.cache.iface.collectFrom
 import io.bitrise.bitkot.cache.local.ILocalCache
 import io.bitrise.bitkot.cache.local.createLocalCache
 import io.bitrise.bitkot.cache.remote.IRemoteCache
-import io.bitrise.bitkot.cache.remote.RemoteCacheConfig
 import io.bitrise.bitkot.cache.remote.createRemoteCache
 import io.bitrise.bitkot.utils.CompositeDisposable
-import io.bitrise.bitkot.utils.createInnerTmpHardlinkTo
-import io.bitrise.bitkot.utils.inputStreamFlow
 import build.bazel.remote.execution.v2.ActionResult
 import build.bazel.remote.execution.v2.Digest
-import java.util.*
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.*
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 import kotlin.RuntimeException
-import kotlin.io.path.div
-import io.bitrise.bitkot.utils.*
-import io.bitrise.bitkot.proto_utils.toFileName
 
 open class Cache(
     private val remote: IRemoteCache,
