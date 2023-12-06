@@ -84,15 +84,9 @@ object BitLogging {
         curNode.props?.let(editFn)
     }
 
-    class PkgContext(val pkg: String) {
-        private var propsRef: WeakReference<ByPackageLoggingProps>? = null
-
-        fun getProps(): ByPackageLoggingProps {
-            propsRef?.get()?.let { return it }
-            val result = BitLogging.getProps(pkg)
-            propsRef = WeakReference(result)
-            return result
-        }
+    interface PkgContext {
+        fun getProps(): ByPackageLoggingProps
+        fun packageStr(): String
     }
 
     private var curLoggerFactory: LoggerFactory = {
@@ -110,9 +104,24 @@ object BitLogging {
         set(value) = synchronized(BitLogging::class) { curLoggerFactory = value }
 }
 
+//private class PkgContextImpl(private val pkg: String): BitLogging.PkgContext {
+//    private var propsRef: WeakReference<BitLogging.ByPackageLoggingProps>? = null
+//
+//    override fun packageStr() = pkg
+//
+//    override fun getProps(): BitLogging.ByPackageLoggingProps {
+//        propsRef?.get()?.let { return it }
+//        val result = BitLogging.getProps(pkg)
+//        propsRef = WeakReference(result)
+//        return result
+//    }
+//}
+
 class LoggerWrapper(pkg: String): BitLogger() {
-    private val ctx = BitLogging.PkgContext(pkg)
-    private val logger by lazy { BitLogging.loggerFactory(ctx) }
+    private val logger by lazy { BitLogging.loggerFactory(object: BitLogging.PkgContext {
+        override fun getProps() = BitLogging.getProps(pkg)
+        override fun packageStr() = pkg
+    }) }
 
     override fun debug(d: () -> Any?) = logger.debug(d)
     override fun error(d: () -> Any?) = logger.error(d)
@@ -120,4 +129,4 @@ class LoggerWrapper(pkg: String): BitLogger() {
     override fun printConsole(d: () -> Any?) = logger.printConsole(d)
 }
 
-fun <T: Any> T.createBitLogger() = LoggerWrapper(this.javaClass.name)
+fun <T: Any> T.createBitLogger(): BitLogger = LoggerWrapper(this.javaClass.name)
